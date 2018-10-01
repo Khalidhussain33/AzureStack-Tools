@@ -366,7 +366,29 @@ function Remove-AzsRegistration{
         }
         else
         {
-            $registrationResources = Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName
+            try
+            {
+                Log-Output "Attempting to retrieve resources using command Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName"
+                $registrationResources = Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName
+            }
+            catch
+            {
+                Log-Warning "Could not retrieve resources from Azure `r`n$($_)"
+            }
+
+            if ($registrationResources.Count -eq 0)
+            {
+                try
+                {
+                    Log-Output "Attempting to retrieve resources using command: Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName $ResourceGroupName"
+                    $registrationresources = Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName azurestack
+                }
+                catch
+                {
+                    Log-Throw "Unable to retrieve registration resource(s) from Azure `r`n$($_)" -CallingFunction $($PSCmdlet.MyInvocation.MyCommand.Name)
+                }
+            }
+           
             foreach ($resource in $registrationResources)
             {
                 if ($resource.Properties.cloudId -eq $stampInfo.CloudId)
@@ -762,7 +784,29 @@ Function UnRegister-AzsEnvironment{
     }
     elseif ($CloudId)
     {
-        $registrationResources = Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName
+        try
+        {
+            Log-Output "Attempting to retrieve resources using command Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName"
+            $registrationResources = Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName
+        }
+        catch
+        {
+            Log-Warning "Could not retrieve resources from Azure `r`n$($_)"
+        }
+
+        if ($registrationResources.Count -eq 0)
+        {
+            try
+            {
+                Log-Output "Attempting to retrieve resources using command: Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName $ResourceGroupName"
+                $registrationresources = Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName azurestack
+            }
+            catch
+            {
+                Log-Throw "Unable to retrieve registration resource(s) from Azure `r`n$($_)" -CallingFunction $($PSCmdlet.MyInvocation.MyCommand.Name)
+            }   
+        }
+
         foreach ($resource in $registrationResources)
         {
             if ($resource.Properties.cloudId -eq $CloudId)
