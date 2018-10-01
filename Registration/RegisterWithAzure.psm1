@@ -366,8 +366,7 @@ function Remove-AzsRegistration{
         }
         else
         {
-            $registrationResourceId = "/subscriptions/$($AzureContext.Subscription.SubscriptionId)/resourceGroups/$ResourceGroupName/providers/Microsoft.AzureStack/registrations"
-            $registrationResources = Get-AzureRmResource -ResourceId $registrationResourceId -ErrorAction Ignore
+            $registrationResources = Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName
             foreach ($resource in $registrationResources)
             {
                 if ($resource.Properties.cloudId -eq $stampInfo.CloudId)
@@ -763,8 +762,7 @@ Function UnRegister-AzsEnvironment{
     }
     elseif ($CloudId)
     {
-        $registrationResourceId = "/subscriptions/$($AzureContext.Subscription.SubscriptionId)/resourceGroups/$ResourceGroupName/providers/Microsoft.AzureStack/registrations"
-        $registrationResources = Get-AzureRmResource -ResourceId $registrationResourceId -ErrorAction Ignore
+        $registrationResources = Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName
         foreach ($resource in $registrationResources)
         {
             if ($resource.Properties.cloudId -eq $CloudId)
@@ -1154,6 +1152,8 @@ function New-RegistrationResource{
         Properties        = @{ registrationToken = "$registrationToken" }
     }
 
+    Log-Output "Resource creation params: $(ConvertTo-Json $resourceCreationParams)"
+
     do
     {
         try
@@ -1174,8 +1174,6 @@ function New-RegistrationResource{
             }
         }
     } while ($currentAttempt -lt $maxAttempt)
-
-    $resourceCreationParams['Location'] = 'Global'
 
     do
     {
