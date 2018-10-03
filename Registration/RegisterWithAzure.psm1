@@ -788,6 +788,7 @@ Function UnRegister-AzsEnvironment{
     }
     elseif ($CloudId)
     {
+        Log-Output "Parameter 'RegistrationName' not supplied. Searching through all registration resources under current context."
         try
         {
             Log-Output "Attempting to retrieve resources using command: 'Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName'"
@@ -803,20 +804,23 @@ Function UnRegister-AzsEnvironment{
             try
             {
                 Log-Output "Attempting to retrieve resources using command: 'Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName $ResourceGroupName'"
-                $registrationresources = Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName azurestack
+                $registrationresources = Get-AzureRmResource -ResourceType microsoft.azurestack/registrations -ResourceGroupName $ResourceGroupName
             }
             catch
             {
                 Log-Throw "Unable to retrieve registration resource(s) from Azure `r`n$($_)" -CallingFunction $($PSCmdlet.MyInvocation.MyCommand.Name)
-            }   
+            }
         }
 
+        Log-Output "Found $($registrationResources.Count) registration resources. Finding a matching CloudId may take some time."
         foreach ($resource in $registrationResources)
         {
-            if ($resource.Properties.cloudId -eq $CloudId)
+            $resourceObject = Get-AzureRmResource -ResourceId "/subscriptions/$($AzureContext.Subscription.SubscriptionId)/resourceGroups/$ResourceGroupName/providers/Microsoft.AzureStack/registrations/$($resource.name)"
+            $resourceCloudId = (($resourceObject.Properties.ToString()) | ConvertFrom-Json).cloudId
+            if ($resourceCloudId -eq $stampInfo.CloudId)
             {
-                $registrationResource = $resource
-                break
+                $registrationResource = $resourceObject
+                break   
             }
         }
     }
