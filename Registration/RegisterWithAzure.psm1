@@ -366,6 +366,7 @@ function Remove-AzsRegistration{
         }
         else
         {
+            Log-Output "Parameter 'RegistrationName' not supplied. Searching through all registration resources under current context."
             try
             {
                 Log-Output "Attempting to retrieve resources using command: 'Find-AzureRmResource -ResourceType Microsoft.AzureStack/registrations -ResourceGroupNameEquals $ResourceGroupName'"
@@ -388,12 +389,15 @@ function Remove-AzsRegistration{
                     Log-Throw "Unable to retrieve registration resource(s) from Azure `r`n$($_)" -CallingFunction $($PSCmdlet.MyInvocation.MyCommand.Name)
                 }
             }
-           
+
+            Log-Output "Found $($registrationResources.Count) registration resources. Finding a matching CloudId may take some time."
             foreach ($resource in $registrationResources)
             {
-                if ($resource.Properties.cloudId -eq $stampInfo.CloudId)
+                $resourceObject = Get-AzureRmResource -ResourceId "/subscriptions/$($AzureContext.Subscription.SubscriptionId)/resourceGroups/$ResourceGroupName/providers/Microsoft.AzureStack/registrations/$($resource.name)"
+                $resourceCloudId = (($resourceObject.Properties.ToString()) | ConvertFrom-Json).cloudId
+                if ($resourceCloudId -eq $stampInfo.CloudId)
                 {
-                    $registrationResource = $resource
+                    $registrationResource = $resourceObject
                     break   
                 }
             }
